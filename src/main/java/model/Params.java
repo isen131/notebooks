@@ -8,9 +8,9 @@ package model;
 public class Params
 {
     private String commandName;
-    private String commandArgs;
+    private String[] commandArgs;
 
-    public Params(String commandName, String commandArgs)
+    public Params(String commandName, String[] commandArgs)
     {
         this.commandName = commandName;
         this.commandArgs = commandArgs;
@@ -25,11 +25,11 @@ public class Params
         this.commandName = commandName;
     }
 
-    public String getCommandArgs() {
+    public String[] getCommandArgs() {
         return commandArgs;
     }
 
-    public void setCommandArgs(String commandArgs) {
+    public void setCommandArgs(String[] commandArgs) {
         this.commandArgs = commandArgs;
     }
 

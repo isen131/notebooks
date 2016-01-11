@@ -26,10 +26,6 @@ public class Book {
         return persons;
     }
 
-    /**
-     * {@link http://www.objectdb.com/api/java/jpa/GenerationType}
-     * @return идентификатор первичного ключа
-     */
     @Id
     @GeneratedValue(generator = "increment")
     @GenericGenerator(name = "increment", strategy = "increment")

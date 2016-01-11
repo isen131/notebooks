@@ -2,10 +2,10 @@ package services;
 
 import com.google.inject.Singleton;
 import configs.DBConnection;
+import model.Address;
 import model.Book;
 import model.Person;
 import model.Phone;
-import org.apache.commons.lang3.StringUtils;
 
 
 import java.sql.*;
@@ -21,9 +21,21 @@ import java.util.List;
 public class JDBCStorageService implements StorageService
 {
     @Override
-    public void add(String personName, String phone)
+    public void add(String personName, String phone, String address)
     {
-        TransactionScript.getInstance().addPerson(personName, phone, defaultBook());
+        TransactionScript.getInstance().addPerson(personName, phone, address, defaultBook());
+    }
+
+    @Override
+    public void delete(Long ID)
+    {
+        TransactionScript.getInstance().deletePerson(ID, defaultBook());
+    }
+
+    @Override
+    public void update(Long ID, String personName, String phone, String address)
+    {
+        TransactionScript.getInstance().updatePerson(ID, personName, phone, address, defaultBook());
     }
 
     @Override
@@ -82,9 +94,10 @@ public class JDBCStorageService implements StorageService
             try
             {
                 PreparedStatement statement = connection.prepareStatement(
-                        "select name, phone from book b \n" +
+                        "select name, phone, address from book b \n" +
                         "inner join person p on b.id = p.book_id \n" +
-                        "inner join phone ph on p.id = ph.person_id\n");
+                        "inner join phone ph on p.id = ph.person_id\n" +
+                        "inner join address a on p.id = a.person_id\n");
 
                 ResultSet r_set = statement.executeQuery();
 
@@ -92,7 +105,9 @@ public class JDBCStorageService implements StorageService
                 {
                     Person p = new Person(r_set.getString("name"));
                     Phone ph = new Phone(p, r_set.getString("phone"));
+                    Address a = new Address(p, r_set.getString("address"));
                     p.getPhones().add(ph);
+                    p.getAddresses().add(a);
                     result.add(p);
                 }
 
@@ -104,7 +119,7 @@ public class JDBCStorageService implements StorageService
             return result;
         }
 
-        public void addPerson(String person, String phone, Book book)
+        public void addPerson(String person, String phone, String address, Book book)
         {
             try
             {
@@ -120,10 +135,10 @@ public class JDBCStorageService implements StorageService
 
                 PreparedStatement addPerson = connection.prepareStatement("insert into person (book_id, name) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
                 PreparedStatement addPhone  = connection.prepareStatement("insert into phone (person_id, phone) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
+                PreparedStatement addAddress  = connection.prepareStatement("insert into address (person_id, address) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
 
                 addPerson.setLong(1, book.getId());
                 addPerson.setString (2, person);
-
                 addPerson.execute();
 
                 ResultSet auto_pk = addPerson.getGeneratedKeys();
@@ -133,10 +148,75 @@ public class JDBCStorageService implements StorageService
                     addPhone.setInt(1, id);
                     addPhone.setString(2, phone);
                     addPhone.execute();
+                    addAddress.setInt(1, id);
+                    addAddress.setString(2, address);
+                    addAddress.execute();
+                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        public void deletePerson(Long ID, Book book)
+        {
+            try
+            {
+                if (book.getId() == null)
+                {
+                    PreparedStatement addBook = connection.prepareStatement("insert into book (id) values (DEFAULT)", Statement.RETURN_GENERATED_KEYS);
+                    addBook.execute();
+                    ResultSet generated_book_id = addBook.getGeneratedKeys();
+
+                    if (generated_book_id.next())
+                        book.setId(generated_book_id.getLong("id"));
+                }
+                PreparedStatement deletePerson = connection.prepareStatement("delete from person where book_id = ? and id = ?");
+                PreparedStatement deletePhone  = connection.prepareStatement("delete from phone where person_id = ?");
+                PreparedStatement deleteAddress  = connection.prepareStatement("delete from address where person_id = ?");
+                deletePhone.setLong(1, ID);
+                deletePhone.executeUpdate();
+                deleteAddress.setLong(1, ID);
+                deleteAddress.executeUpdate();
+                deletePerson.setLong(1, book.getId());
+                deletePerson.setLong(2, ID);
+                deletePerson.executeUpdate();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        public void updatePerson(Long ID, String person, String phone, String address, Book book)
+        {
+            try
+            {
+                if (book.getId() == null)
+                {
+                    PreparedStatement addBook = connection.prepareStatement("insert into book (id) values (DEFAULT)", Statement.RETURN_GENERATED_KEYS);
+                    addBook.execute();
+                    ResultSet generated_book_id = addBook.getGeneratedKeys();
+
+                    if (generated_book_id.next())
+                        book.setId(generated_book_id.getLong("id"));
                 }
 
+                PreparedStatement updatePerson = connection.prepareStatement("update person set name = ? where book_id = ? and id = ?");
+                PreparedStatement updatePhone  = connection.prepareStatement("update phone set phone = ? where person_id = ?");
+                PreparedStatement updateAddress  = connection.prepareStatement("update address set address = ? where person_id = ?");
 
-
+                updatePerson.setString(1, person);
+                updatePerson.setLong(2, book.getId());
+                updatePerson.setLong(3, ID);
+                updatePerson.executeUpdate();
+                updatePhone.setString(1, phone);
+                updatePhone.setLong(2, ID);
+                updatePhone.executeUpdate();
+                updateAddress.setString(1, address);
+                updateAddress.setLong(2, ID);
+                updateAddress.executeUpdate();
             }
             catch (Exception e)
             {

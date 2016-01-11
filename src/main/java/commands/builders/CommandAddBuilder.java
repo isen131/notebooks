@@ -28,13 +28,13 @@ public class CommandAddBuilder extends AbstractCommandBuilder
     {
         String[] args = null;
 
-        if (StringUtils.isNotEmpty(params.getCommandArgs()))
-            args = StringUtils.split(params.getCommandArgs());
+        if (params.getCommandArgs().length != 0)
+            args = params.getCommandArgs();
 
-        if (args == null || args.length != 2)
+        if (args == null || args.length != 3)
             return ConsoleCommandsFactory.getInstance().createUnknownCommand(params);
 
-        Command add = new CommandAdd(args[0], args[1], getStorage());
+        Command add = new CommandAdd(args[0], args[1], args[2], getStorage());
 
         return add;
 
